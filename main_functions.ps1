@@ -40,6 +40,7 @@ function get-HM_data_per_postcode
     $HM_items
 }
 
+#Create an array of parameters to be passed to the Zoopla query
 $zoopla_q_array = 
 @{
     area = "london"
@@ -50,16 +51,21 @@ $zoopla_q_array =
     minimum_price  = 150000  #in GBP. When listing_status is "sale" this refers to the sale price and when listing_status is "rent" it refers to the per-week price.
     maximum_price = 320000	#Maximum price for the property, in GBP. See above
 }
+
+#set required zoopla parameters
 $zoopla_url = "http://api.zoopla.co.uk/api/v1/"
 $zoopla_api_name = "property_listings"
 $working_dataset = $null
+#create a list of pages numbers (only 100 allowed in this API), and run on all the pages
 $number_of_pages = 1..99
 $number_of_pages | % {
+    #invoke the Zoopla API and add results to a variable
     $_
     $zoopla_q_array.page_number = $_
     $zoopla_output = invoke-zooplaApi -zoopla_url $zoopla_url -zoopla_key $zoopla_key -zoopla_api_name $zoopla_api_name -zoopla_q_array $zoopla_q_array
     $working_dataset += $zoopla_output.response.listing
 }
+
 #save the dataset so we don't need to query it again and waste resources
 $working_dataset  | Export-Clixml ("C:\temp\api\export_area_" + $zoopla_q_array.area + "_total_hits_" + $zoopla_output.response.result_count +"_last_page_" + $zoopla_q_array.page_number + "_max_price_" + $zoopla_q_array.maximum_price + ".xml")
 
